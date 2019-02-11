@@ -473,7 +473,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     if (ReactBuildConfig.DEBUG && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
       WebView.setWebContentsDebuggingEnabled(true);
     }
-
+    /*
     webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
         RNCWebViewModule module = getModule();
@@ -519,7 +519,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           module.downloadFile();
         }
       }
-    });
+    });*/
 
     return webView;
   }
