@@ -183,7 +183,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       WebView.setWebContentsDebuggingEnabled(true);
     }
 
-    webView.setDownloadListener(new DownloadListener() {
+    /*webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
         RNCWebViewModule module = getModule(reactContext);
 
@@ -219,7 +219,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           module.downloadFile();
         }
       }
-    });
+    });*/
 
     return webView;
   }
