@@ -31,6 +31,7 @@ import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -66,6 +67,10 @@ import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEven
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -127,6 +132,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected @Nullable String mUserAgent = null;
   protected @Nullable String mUserAgentWithApplicationName = null;
 
+  protected HashMap<String, Boolean> adList;
+
+
+
   public RNCWebViewManager() {
     mWebViewConfig = new WebViewConfig() {
       public void configWebView(WebView webView) {
@@ -168,6 +177,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     settings.setAllowFileAccess(false);
     settings.setAllowContentAccess(false);
+
+    this.loadAdlist(reactContext);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
       settings.setAllowFileAccessFromFileURLs(false);
       setAllowUniversalAccessFromFileURLs(webView, false);
@@ -222,6 +233,38 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     });*/
 
     return webView;
+  }
+
+
+  private void loadAdlist(Context context) {
+
+    BufferedReader reader = null;
+
+    if (this.adList == null)
+      this.adList = new HashMap<>();
+    else
+      return;
+    try {
+      reader = new BufferedReader(
+        new InputStreamReader(context.getAssets().open("adUrls.txt")));
+
+      // do reading, usually loop until end of file reading
+      String mLine;
+      while ((mLine = reader.readLine()) != null) {
+        //process line
+        this.adList.put(mLine, true);
+      }
+    } catch (IOException e) {
+      //log the exception
+    } finally {
+      if (reader != null) {
+        try {
+          reader.close();
+        } catch (IOException e) {
+          //log the exception
+        }
+      }
+    }
   }
 
   @ReactProp(name = "javaScriptEnabled")
@@ -314,6 +357,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     this.setUserAgentString(view);
   }
 
+
+  @ReactProp(name = "blockAds")
+  public void setBlockAds(WebView view, boolean enable) {
+
+    if (enable)
+      this.loadAdlist(view.getContext());
+  }
+
   @ReactProp(name = "applicationNameForUserAgent")
   public void setApplicationNameForUserAgent(WebView view, @Nullable String applicationName) {
     if(applicationName != null) {
@@ -363,7 +414,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public void setMessagingEnabled(WebView view, boolean enabled) {
     ((RNCWebView) view).setMessagingEnabled(enabled);
   }
-   
+
   @ReactProp(name = "incognito")
   public void setIncognito(WebView view, boolean enabled) {
     // Remove all previous cookies
@@ -499,7 +550,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
-    view.setWebViewClient(new RNCWebViewClient());
+
+    RNCWebViewClient rncWebViewClient = new RNCWebViewClient();
+    rncWebViewClient.setAdList(this.adList);
+
+    view.setWebViewClient(rncWebViewClient);
   }
 
   @Override
@@ -658,7 +713,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
+    HashMap<String, Boolean> adlist;
 
+    public void setAdList(HashMap<String, Boolean> adlist) {
+      this.adlist = adlist;
+    }
     @Override
     public void onPageFinished(WebView webView, String url) {
       super.onPageFinished(webView, url);
@@ -692,6 +751,33 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           view.getId(),
           createWebViewEvent(view, url)));
       return true;
+    }
+
+    @Override
+    public WebResourceResponse shouldInterceptRequest(final WebView view, String urlStr) {
+
+      if (this.adlist == null)
+        return null;
+
+      URL url = null;
+      try {
+        url = new URL(urlStr);
+
+        String host = url.getHost();
+
+        if (this.adlist.containsKey(host)) {
+          return createEmptyResource();
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+        return null;
+      }
+      return null;
+
+    }
+
+    public WebResourceResponse createEmptyResource() {
+      return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
     }
 
 
@@ -1031,16 +1117,16 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
       if (mOnScrollDispatchHelper.onScrollChanged(x, y)) {
         ScrollEvent event = ScrollEvent.obtain(
-                this.getId(),
-                ScrollEventType.SCROLL,
-                x,
-                y,
-                mOnScrollDispatchHelper.getXFlingVelocity(),
-                mOnScrollDispatchHelper.getYFlingVelocity(),
-                this.computeHorizontalScrollRange(),
-                this.computeVerticalScrollRange(),
-                this.getWidth(),
-                this.getHeight());
+          this.getId(),
+          ScrollEventType.SCROLL,
+          x,
+          y,
+          mOnScrollDispatchHelper.getXFlingVelocity(),
+          mOnScrollDispatchHelper.getYFlingVelocity(),
+          this.computeHorizontalScrollRange(),
+          this.computeVerticalScrollRange(),
+          this.getWidth(),
+          this.getHeight());
 
         dispatchEvent(this, event);
       }
