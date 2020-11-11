@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.Manifest;
+import android.net.http.SslError;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -94,8 +95,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.annotation.Nullable;
 
 /**
  * Manages instances of {@link WebView}
@@ -414,7 +413,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
     this.setUserAgentString(view);
   }
-
 
   @ReactProp(name = "blockAds")
   public void setBlockAds(WebView view, boolean enable) {
@@ -834,7 +832,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ReadableArray mUrlPrefixesForDefaultIntent;
     protected RNCWebView.ProgressChangedFilter progressChangedFilter = null;
     protected @Nullable String ignoreErrFailedForThisURL = null;
-
+    HashMap<String, Boolean> adlist;
+    
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
       ignoreErrFailedForThisURL = url;
     }
@@ -842,6 +841,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public void setAdList(HashMap<String, Boolean> adlist) {
       this.adlist = adlist;
     }
+
     @Override
     public void onPageFinished(WebView webView, String url) {
       super.onPageFinished(webView, url);
