@@ -2,6 +2,7 @@ package com.reactnativecommunity.webview;
 
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.SystemClock;
@@ -32,6 +33,9 @@ import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 
+import java.io.ByteArrayInputStream;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RNCWebViewClient extends WebViewClient {
@@ -43,6 +47,11 @@ public class RNCWebViewClient extends WebViewClient {
     protected @Nullable String ignoreErrFailedForThisURL = null;
     protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
 
+    HashMap<String, Boolean> adlist;
+
+    public void setAdList(HashMap<String, Boolean> adlist) {
+        this.adlist = adlist;
+    }
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
         ignoreErrFailedForThisURL = url;
     }
@@ -82,6 +91,30 @@ public class RNCWebViewClient extends WebViewClient {
 
       RNCWebView reactWebView = (RNCWebView) webView;
       reactWebView.callInjectedJavaScriptBeforeContentLoaded();
+    }
+
+    @Nullable
+    @Override
+    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+        if (this.adlist == null)
+            return null;
+
+        Uri url = request.getUrl();
+        try {
+            String host = url.getHost();
+
+            if (this.adlist.containsKey(host)) {
+                return createEmptyResource();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
+    }
+
+    public WebResourceResponse createEmptyResource() {
+        return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
     }
 
     @Override

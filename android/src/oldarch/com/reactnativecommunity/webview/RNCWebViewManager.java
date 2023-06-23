@@ -22,17 +22,22 @@ import com.reactnativecommunity.webview.events.TopMessageEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 
+import android.content.Context;
 import android.graphics.Color;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.HashMap;
 
 public class RNCWebViewManager extends SimpleViewManager<RNCWebView> {
 
     private final RNCWebViewManagerImpl mRNCWebViewManagerImpl;
+    protected HashMap<String, Boolean> adList;
 
     public RNCWebViewManager() {
         mRNCWebViewManagerImpl = new RNCWebViewManagerImpl();
@@ -270,10 +275,51 @@ public class RNCWebViewManager extends SimpleViewManager<RNCWebView> {
         mRNCWebViewManagerImpl.setUserAgent(view, value);
     }
 
+    private void loadAdlist(Context context) {
+
+        BufferedReader reader = null;
+
+        if (this.adList == null)
+            this.adList = new HashMap<>();
+        else
+            return;
+        try {
+            reader = new BufferedReader(
+                    new InputStreamReader(context.getAssets().open("adUrls.txt")));
+
+            // do reading, usually loop until end of file reading
+            String mLine;
+            while ((mLine = reader.readLine()) != null) {
+                //process line
+                this.adList.put(mLine, true);
+            }
+        } catch (IOException e) {
+            //log the exception
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    //log the exception
+                }
+            }
+        }
+    }
+
+    @ReactProp(name = "blockAds")
+    public void setBlockAds(RNCWebView view, boolean enable) {
+        if (enable)
+            this.loadAdlist(view.getContext());
+    }
+
     @Override
     protected void addEventEmitters(@NonNull ThemedReactContext reactContext, RNCWebView view) {
         // Do not register default touch emitter and let WebView implementation handle touches
-        view.setWebViewClient(new RNCWebViewClient());
+
+        RNCWebViewClient rncWebViewClient = new RNCWebViewClient();
+        rncWebViewClient.setAdList(this.adList);
+
+        view.setWebViewClient(rncWebViewClient);
     }
 
     @Override

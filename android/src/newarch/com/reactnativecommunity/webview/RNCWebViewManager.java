@@ -29,12 +29,18 @@ import org.json.JSONObject;
 
 import java.util.Map;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+
 @ReactModule(name = RNCWebViewManagerImpl.NAME)
 public class RNCWebViewManager extends SimpleViewManager<RNCWebView>
         implements RNCWebViewManagerInterface<RNCWebView> {
 
     private final ViewManagerDelegate<RNCWebView> mDelegate;
     private final RNCWebViewManagerImpl mRNCWebViewManagerImpl;
+	protected HashMap<String, Boolean> adList;
 
     public RNCWebViewManager() {
         mDelegate = new RNCWebViewManagerDelegate<>(this);
@@ -313,6 +319,43 @@ public class RNCWebViewManager extends SimpleViewManager<RNCWebView>
         mRNCWebViewManagerImpl.setWebviewDebuggingEnabled(view, value);
     }
 
+    private void loadAdlist(Context context) {
+
+        BufferedReader reader = null;
+
+        if (this.adList == null)
+            this.adList = new HashMap<>();
+        else
+            return;
+        try {
+            reader = new BufferedReader(
+                    new InputStreamReader(context.getAssets().open("adUrls.txt")));
+
+            // do reading, usually loop until end of file reading
+            String mLine;
+            while ((mLine = reader.readLine()) != null) {
+                //process line
+                this.adList.put(mLine, true);
+            }
+        } catch (IOException e) {
+            //log the exception
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    //log the exception
+                }
+            }
+        }
+    }
+
+    @ReactProp(name = "blockAds")
+    public void setBlockAds(RNCWebView view, boolean enable) {
+        if (enable)
+            this.loadAdlist(view.getContext());
+    }
+
     /* iOS PROPS - no implemented here */
     @Override
     public void setAllowingReadAccessToURL(RNCWebView view, @Nullable String value) {}
@@ -479,8 +522,10 @@ public class RNCWebViewManager extends SimpleViewManager<RNCWebView>
 
   @Override
     protected void addEventEmitters(@NonNull ThemedReactContext reactContext, RNCWebView view) {
-        // Do not register default touch emitter and let WebView implementation handle touches
-        view.setWebViewClient(new RNCWebViewClient());
+        RNCWebViewClient rncWebViewClient = new RNCWebViewClient();
+        rncWebViewClient.setAdList(this.adList);
+
+        view.setWebViewClient(rncWebViewClient);
     }
 
     @Override
