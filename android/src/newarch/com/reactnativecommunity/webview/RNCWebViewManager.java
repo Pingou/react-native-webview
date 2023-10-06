@@ -36,6 +36,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+<<<<<<< HEAD
+=======
+
+@ReactModule(name = RNCWebViewManagerImpl.NAME)
+public class RNCWebViewManager extends SimpleViewManager<RNCWebView>
+        implements RNCWebViewManagerInterface<RNCWebView> {
+>>>>>>> 8a2c2aa93ed15a9dc5cd88e74ab7cb384c9308b5
 
 @ReactModule(name = RNCWebViewManagerImpl.NAME)
 public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
@@ -539,6 +546,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
   // !These will never be called
 
   @Override
+
     protected void addEventEmitters(@NonNull ThemedReactContext reactContext, RNCWebViewWrapper view) {
         // Do not register default touch emitter and let WebView implementation handle touches
         RNCWebViewClient rncWebViewClient = new RNCWebViewClient();
