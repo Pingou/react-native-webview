@@ -369,9 +369,11 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     }
 
     @ReactProp(name = "blockAds")
-    public void setBlockAds(RNCWebView view, boolean enable) {
-        if (enable)
-            this.loadAdlist(view.getContext());
+    public void setBlockAds(RNCWebViewWrapper view, boolean enable) {
+        if (enable) {
+            this.loadAdlist(view.getWebView().getContext());
+        }
+            
     }
 
     /* iOS PROPS - no implemented here */
