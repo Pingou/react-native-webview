@@ -32,8 +32,13 @@ import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,10 +52,39 @@ public class RNCWebViewClient extends WebViewClient {
     protected @Nullable String ignoreErrFailedForThisURL = null;
     protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
 
-    HashMap<String, Boolean> adlist;
+    HashMap<String, Boolean> adList = null;
 
-    public void setAdList(HashMap<String, Boolean> adlist) {
-        this.adlist = adlist;
+    public void setEnableAdList(ThemedReactContext context) {
+
+        if (this.adList != null) {
+            return;
+        }
+        BufferedReader reader = null;
+
+
+        this.adList = new HashMap<>();
+
+        try {
+            reader = new BufferedReader(
+                    new InputStreamReader(context.getAssets().open("adUrls.txt")));
+
+            // do reading, usually loop until end of file reading
+            String mLine;
+            while ((mLine = reader.readLine()) != null) {
+                //process line
+                this.adList.put(mLine, true);
+            }
+        } catch (IOException e) {
+            //log the exception
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    //log the exception
+                }
+            }
+        }
     }
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
         ignoreErrFailedForThisURL = url;
@@ -63,6 +97,14 @@ public class RNCWebViewClient extends WebViewClient {
     @Override
     public void onPageFinished(WebView webView, String url) {
         super.onPageFinished(webView, url);
+        String cookies = CookieManager.getInstance().getCookie(url);
+        if (cookies != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                CookieManager.getInstance().flush();
+            }else {
+                CookieSyncManager.getInstance().sync();
+            }
+        }
 
         if (!mLastLoadFailed) {
             RNCWebView reactWebView = (RNCWebView) webView;
@@ -96,14 +138,14 @@ public class RNCWebViewClient extends WebViewClient {
     @Nullable
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-        if (this.adlist == null)
+        if (this.adList == null)
             return null;
 
         Uri url = request.getUrl();
         try {
             String host = url.getHost();
 
-            if (this.adlist.containsKey(host)) {
+            if (this.adList.containsKey(host)) {
                 return createEmptyResource();
             }
         } catch (Exception e) {
@@ -120,16 +162,16 @@ public class RNCWebViewClient extends WebViewClient {
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
         final RNCWebView rncWebView = (RNCWebView) view;
-        final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
+        final boolean isJsDebugging = rncWebView.getReactApplicationContext().getJavaScriptContextHolder().get() == 0;
 
-        if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
+        if (!isJsDebugging && rncWebView.mMessagingJSModule != null) {
             final Pair<Double, AtomicReference<RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState>> lock = RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.getNewLock();
             final double lockIdentifier = lock.first;
             final AtomicReference<RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState> lockObject = lock.second;
 
             final WritableMap event = createWebViewEvent(view, url);
             event.putDouble("lockIdentifier", lockIdentifier);
-            rncWebView.sendDirectMessage("onShouldStartLoadWithRequest", event);
+            rncWebView.dispatchDirectShouldStartLoadWithRequest(event);
 
             try {
                 assert lockObject != null;

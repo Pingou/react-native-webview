@@ -21,22 +21,11 @@ import com.reactnativecommunity.webview.events.TopOpenWindowEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 
-import android.content.Context;
-import android.graphics.Color;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Map;
-import java.util.HashMap;
 
 public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
 
     private final RNCWebViewManagerImpl mRNCWebViewManagerImpl;
-    protected HashMap<String, Boolean> adList;
 
     public RNCWebViewManager() {
         mRNCWebViewManagerImpl = new RNCWebViewManagerImpl();
@@ -52,8 +41,8 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
         return mRNCWebViewManagerImpl.createViewInstance(context);
     }
 
-    public RNCWebViewWrapper createViewInstance(ThemedReactContext context, RNCWebViewWrapper view) {
-      return mRNCWebViewManagerImpl.createViewInstance(context, view.getWebView());
+    public RNCWebViewWrapper createViewInstance(ThemedReactContext context, RNCWebView view) {
+      return mRNCWebViewManagerImpl.createViewInstance(context, view);
     }
 
     @ReactProp(name = "allowFileAccess")
@@ -261,7 +250,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
 
     @ReactProp(name = "source")
     public void setSource(RNCWebViewWrapper view, @Nullable ReadableMap value) {
-        mRNCWebViewManagerImpl.setSource(view, value, false);
+        mRNCWebViewManagerImpl.setSource(view, value);
     }
 
     @ReactProp(name = "textZoom")
@@ -279,55 +268,28 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
         mRNCWebViewManagerImpl.setWebviewDebuggingEnabled(view, value);
     }
 
+    @ReactProp(name = "blockAds")
+    public void setBlockAds(RNCWebViewWrapper view, boolean enable) {
+        if (enable) {
+            mRNCWebViewManagerImpl.enableAdblock(view);
+        }
+
+    }
+
     @ReactProp(name = "userAgent")
     public void setUserAgent(RNCWebViewWrapper view, @Nullable String value) {
         mRNCWebViewManagerImpl.setUserAgent(view, value);
     }
 
-    private void loadAdlist(Context context) {
-
-        BufferedReader reader = null;
-
-        if (this.adList == null)
-            this.adList = new HashMap<>();
-        else
-            return;
-        try {
-            reader = new BufferedReader(
-                    new InputStreamReader(context.getAssets().open("adUrls.txt")));
-
-            // do reading, usually loop until end of file reading
-            String mLine;
-            while ((mLine = reader.readLine()) != null) {
-                //process line
-                this.adList.put(mLine, true);
-            }
-        } catch (IOException e) {
-            //log the exception
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    //log the exception
-                }
-            }
-        }
-    }
-
-    @ReactProp(name = "blockAds")
-    public void setBlockAds(RNCWebViewWrapper view, boolean enable) {
-        if (enable)
-            this.loadAdlist(view.getWebView().getContext());
+    @ReactProp(name = "paymentRequestEnabled")
+    public void setPaymentRequestEnabled(RNCWebViewWrapper view, boolean value) {
+        mRNCWebViewManagerImpl.setPaymentRequestEnabled(view, value);
     }
 
     @Override
     protected void addEventEmitters(@NonNull ThemedReactContext reactContext, RNCWebViewWrapper viewWrapper) {
         // Do not register default touch emitter and let WebView implementation handle touches
-        RNCWebViewClient rncWebViewClient = new RNCWebViewClient();
-        rncWebViewClient.setAdList(this.adList);
-
-        viewWrapper.getWebView().setWebViewClient(rncWebViewClient);
+        viewWrapper.getWebView().setWebViewClient(new RNCWebViewClient());
     }
 
     @Override
@@ -363,6 +325,12 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
     public void receiveCommand(@NonNull RNCWebViewWrapper reactWebView, String commandId, @Nullable ReadableArray args) {
         mRNCWebViewManagerImpl.receiveCommand(reactWebView, commandId, args);
         super.receiveCommand(reactWebView, commandId, args);
+    }
+
+    @Override
+    protected void onAfterUpdateTransaction(@NonNull RNCWebViewWrapper view) {
+        super.onAfterUpdateTransaction(view);
+        mRNCWebViewManagerImpl.onAfterUpdateTransaction(view);
     }
 
     @Override
