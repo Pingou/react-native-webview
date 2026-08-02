@@ -17,11 +17,14 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.common.build.ReactBuildConfig
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.UIManagerHelper
+import com.reactnativecommunity.webview.events.TopFileDownloadEvent
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.UnsupportedEncodingException
@@ -93,6 +96,18 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
         }
         webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
             webView.setIgnoreErrFailedForThisURL(url)
+
+            // When JS provides onFileDownload, hand the url over to the app
+            // (mirrors iOS) instead of the system DownloadManager
+            if (webView.hasOnFileDownload) {
+                val eventData = Arguments.createMap()
+                eventData.putString("downloadUrl", url)
+                val reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView)
+                UIManagerHelper.getEventDispatcherForReactTag(webView.reactApplicationContext, reactTag)
+                    ?.dispatchEvent(TopFileDownloadEvent(reactTag, eventData))
+                return@DownloadListener
+            }
+
             val module = webView.reactApplicationContext.getNativeModule(RNCWebViewModule::class.java) ?: return@DownloadListener
             val request: DownloadManager.Request = try {
                 DownloadManager.Request(Uri.parse(url))
@@ -528,6 +543,11 @@ class RNCWebViewManagerImpl(private val newArch: Boolean = false) {
     fun setShowsVerticalScrollIndicator(viewWrapper: RNCWebViewWrapper, value: Boolean) {
         val view = viewWrapper.webView
         view.isVerticalScrollBarEnabled = value
+    }
+
+    fun setHasOnFileDownload(viewWrapper: RNCWebViewWrapper, value: Boolean) {
+        val view = viewWrapper.webView
+        view.setHasOnFileDownload(value)
     }
 
     fun setShowsHorizontalScrollIndicator(viewWrapper: RNCWebViewWrapper, value: Boolean) {

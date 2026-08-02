@@ -283,6 +283,10 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         messagingEnabled={typeof onMessageProp === 'function'}
         messagingModuleName={messagingModuleName}
         hasOnScroll={!!otherProps.onScroll}
+        hasOnFileDownload={
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          !!(otherProps as any).onFileDownload
+        }
         onLoadingError={onLoadingError}
         onLoadingFinish={onLoadingFinish}
         onLoadingProgress={onLoadingProgress}

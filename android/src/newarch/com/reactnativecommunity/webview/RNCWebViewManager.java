@@ -15,6 +15,7 @@ import com.facebook.react.viewmanagers.RNCWebViewManagerDelegate;
 import com.facebook.react.viewmanagers.RNCWebViewManagerInterface;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
+import com.reactnativecommunity.webview.events.TopFileDownloadEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -420,7 +421,9 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     public void setTextInteractionEnabled(RNCWebViewWrapper view, boolean value) {}
 
     @Override
-    public void setHasOnFileDownload(RNCWebViewWrapper view, boolean value) {}
+    public void setHasOnFileDownload(RNCWebViewWrapper view, boolean value) {
+        mRNCWebViewManagerImpl.setHasOnFileDownload(view, value);
+    }
 
     @Override
     public void setMediaCapturePermissionGrantType(RNCWebViewWrapper view, @Nullable String value) {}
@@ -534,6 +537,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         export.put(TopRenderProcessGoneEvent.EVENT_NAME, MapBuilder.of("registrationName", "onRenderProcessGone"));
         export.put(TopCustomMenuSelectionEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCustomMenuSelection"));
         export.put(TopOpenWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onOpenWindow"));
+                export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
         return export;
     }
 

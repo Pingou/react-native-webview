@@ -76,6 +76,7 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     protected boolean sendContentSizeChangeEvents = false;
     private OnScrollDispatchHelper mOnScrollDispatchHelper;
     protected boolean hasScrollEvent = false;
+    public boolean hasOnFileDownload = false;
     protected boolean nestedScrollEnabled = false;
     protected ProgressChangedFilter progressChangedFilter;
     protected ThemedReactContext context;
@@ -110,6 +111,10 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
     public void setHasScrollEvent(boolean hasScrollEvent) {
         this.hasScrollEvent = hasScrollEvent;
+    }
+
+    public void setHasOnFileDownload(boolean hasOnFileDownload) {
+        this.hasOnFileDownload = hasOnFileDownload;
     }
 
     public void setNestedScrollEnabled(boolean nestedScrollEnabled) {
